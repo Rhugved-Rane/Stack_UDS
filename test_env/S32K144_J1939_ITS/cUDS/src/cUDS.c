@@ -7,12 +7,38 @@
 
 #include "cUDS.h"
 
-void cUDS_Receive_Msg(uint32_t msgId, uint8_t dataLen, uint8_t* data)
+extern srvc_cfg_t serviceConfigs[];
+CAN_Data_t Can_Data;
+
+void cUDS_CAN_Rx(uint32_t msgId, uint8_t dataLen, uint8_t* data)
+{
+	Can_Data.flag = true;
+	Can_Data.msgId = msgId;
+	Can_Data.msgLen = dataLen;
+	for(uint8_t i = 0; i < 8U; i++)
+	{
+		Can_Data.msgData[i] = data[i];
+	}
+}
+
+void cUDS_Receive_Msg(void)
 {
 	uint8_t str[128U];
 
-	snprintf(str, 128U, "ID: 0x%X LEN: %d DATA: %X %X %X %X %X %X %X %X\r\n",\
-			msgId, dataLen, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	if(true == Can_Data.flag)
+	{
+		Can_Data.flag = false;
 
-	PRINTF(str);
+		snprintf(str, 128U, "ID: 0x%X LEN: %d DATA: %X %X %X %X %X %X %X %X\r\n",\
+				Can_Data.msgId, Can_Data.msgLen, Can_Data.msgData[0], Can_Data.msgData[1],\
+				Can_Data.msgData[2], Can_Data.msgData[3], Can_Data.msgData[4],\
+				Can_Data.msgData[5], Can_Data.msgData[6], Can_Data.msgData[7]);
+
+		PRINTF(str);
+
+		if(0x22U == Can_Data.msgData[1])
+		{
+			serviceConfigs[0].srvcRoutine();
+		}
+	}
 }
